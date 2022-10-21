@@ -25,6 +25,7 @@ namespace mg {
     public:
 
         initial_scene() {
+            platforms.push_back(platform(40, {444, 430}));
             platforms.push_back(platform(128, {400, 450}));
             platforms.push_back(platform(128, {550, 400}));
             platforms.push_back(platform(96, {700, 300}));

@@ -7,12 +7,14 @@
 
 #include "entities/character.hpp"
 #include "entities/platform.hpp"
+#include "utility/collision.hpp"
 
 namespace mg {
 
     class mouse : public character {
 
-        float gravity = 981;
+        float gravity_acceleration = 981;
+        const float forward_speed = 200, jump_speed = 450;
         const std::vector<platform>& platforms;
 
     public:
@@ -25,41 +27,42 @@ namespace mg {
         }
 
         void animate(float delta_time) override {
-            velocity.y += gravity * delta_time;
+
+            velocity.y += gravity_acceleration * delta_time;
+
+            const sf::Vector2f player_size = getSize();
+            const float player_bottom = getPosition().y + player_size.y;
             const float player_left = getPosition().x;
-            const float player_right = getPosition().x + 20;
+            const float player_right = getPosition().x + player_size.x;
+
             bool can_jump = false;
+            bool can_move_left = true;
+            bool can_move_right = true;
+
             for (const platform& p : platforms) {
 
                 const float platform_top = p.getGlobalBounds().top;
-                const float platform_bottom = platform_top + p.getSize().y;
                 const float platform_left = p.getPosition().x;
                 const float platform_right = p.getPosition().x + p.getSize().x;
 
-                const float player_top = getPosition().y;
-                const float player_bottom = player_top + 20;
-                const float delta_y = velocity.y * delta_time;
-                const float player_future_bottom = player_bottom + delta_y;
+                const collision_axis collision = aabb_collision(*this, velocity * delta_time, p);
 
-                if (player_future_bottom > platform_top and player_top < platform_bottom and
-                    player_left < platform_right and player_right > platform_left)
+                if (collision == collision_axis::y and player_bottom <= platform_top) {
                     velocity.y = 0;
-
-                if (player_bottom + 1 > platform_top
-                    and player_left < platform_right and player_right > platform_left)
+                    setPosition({getPosition().x, platform_top - player_size.x});
                     can_jump = true;
+                } else if (collision == collision_axis::x or collision == collision_axis::both) {
+                    if (player_right >= platform_left and player_left <= platform_left) can_move_right = false;
+                    if (player_left <= platform_right and player_right >= platform_right) can_move_left = false;
+                }
             }
-            controls(can_jump);
-            move(velocity * delta_time);
-        }
 
-        // TODO Block movement through platforms in the X axis
-        void controls(bool can_jump) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) and can_jump) velocity.y = -450;
-            float velocity_x = 0;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) velocity_x -= 200;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) velocity_x += 200;
-            velocity.x = velocity_x;
+            velocity.x = 0;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) and can_move_left) velocity.x -= forward_speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) and can_move_right) velocity.x += forward_speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) and can_jump) velocity.y = -jump_speed;
+
+            move(velocity * delta_time);
         }
     };
 }
