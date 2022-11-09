@@ -13,11 +13,13 @@ namespace mg {
         sf::Event event{};
         sf::Clock clock;
         scene* current_scene = nullptr;
+        sf::View view{sf::FloatRect({0, 0}, {1280, 768})};
 
     public:
 
         game_context() : window(sf::VideoMode({1280, 768}), "Mouse Game") {
             window.setVerticalSyncEnabled(true);
+            window.setView(view);
             clock.restart();
         }
 
@@ -34,7 +36,8 @@ namespace mg {
                 window.clear(current_scene->get_background_color());
 
                 const float delta_time = clock.getElapsedTime().asSeconds();
-                current_scene->update(delta_time);
+                current_scene->update(delta_time, window);
+
                 window.draw(*current_scene, sf::RenderStates::Default);
 
                 clock.restart();

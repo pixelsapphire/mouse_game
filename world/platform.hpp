@@ -11,7 +11,7 @@ namespace mg {
 
         platform(float width, sf::Vector2f position) {
             setFillColor(sf::Color(0, 196, 64));
-            setSize({width, 20});
+            setSize({width, 24});
             setPosition(position);
         }
     };

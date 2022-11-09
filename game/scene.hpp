@@ -7,7 +7,7 @@ namespace mg {
 
     struct scene : public sf::Drawable {
 
-        virtual void update(float delta_time) = 0;
+        virtual void update(float delta_time, sf::RenderWindow& window) = 0;
 
         [[nodiscard]] virtual const sf::Color& get_background_color() const = 0;
     };

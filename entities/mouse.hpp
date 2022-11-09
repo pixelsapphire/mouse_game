@@ -5,21 +5,32 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "definitions.hpp"
 #include "entities/character.hpp"
-#include "entities/platform.hpp"
+#include "entities/item.hpp"
 #include "utility/collision.hpp"
+#include "world/lever.hpp"
+#include "world/platform.hpp"
 
 namespace mg {
 
+    struct inventory {
+        uint16_t cheese = 0, key = 0;
+    };
+
     class mouse : public character {
 
-        float gravity_acceleration = 981;
         const float forward_speed = 200, jump_speed = 450;
+        inventory inventory;
         const std::vector<platform>& platforms;
+        std::vector<lever>& levers;
+        std::vector<item>& items;
 
     public:
 
-        mouse(sf::Vector2f position, const std::vector<platform>& platforms) : platforms(platforms) {
+        mouse(sf::Vector2f position, const std::vector<platform>& platforms, std::vector<lever>& levers,
+              std::vector<item>& items)
+                : platforms(platforms), levers(levers), items(items) {
             setFillColor(sf::Color(64, 64, 64));
             setSize({20, 20});
             setPosition(position);
@@ -57,12 +68,28 @@ namespace mg {
                 }
             }
 
+            for (lever& l : levers) {
+                const bool touching = l.getGlobalBounds().findIntersection(getGlobalBounds()).has_value();
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::X) and touching) l.switch_on();
+            }
+
             velocity.x = 0;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) and can_move_left) velocity.x -= forward_speed;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) and can_move_right) velocity.x += forward_speed;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) and can_jump) velocity.y = -jump_speed;
 
             move(velocity * delta_time);
+
+            for (item& i : items) {
+                const bool touching_item = i.getGlobalBounds().findIntersection(getGlobalBounds()).has_value();
+                if (touching_item) {
+                    std::cout << "mouse collected an item" << std::endl;
+                    i.damage(1);
+                    if (i.get_type() == item_type::cheese) inventory.cheese++;
+                    else if (i.get_type() == item_type::key) inventory.key++;
+                    else if (i.get_type() == item_type::heart) hp++;
+                }
+            }
         }
     };
 }
