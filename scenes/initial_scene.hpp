@@ -38,9 +38,15 @@ namespace mg {
             player.setPosition({x, y});
         }
 
-        void update(float delta_time) override {
+        void update(float delta_time, sf::RenderWindow& window) override {
 
+            const auto x_pos1 = player.getPosition().x;
             player.animate(delta_time);
+            const auto x_pos2 = player.getPosition().x;
+            sf::View view = window.getView();
+            if (x_pos2 >= float(window.getSize().x) / 2) view.move({x_pos2 - x_pos1, 0.0f});
+            window.setView(view);
+
             if (shoot_clock.getElapsedTime().asSeconds() >= 2) {
                 for (enemy& e : enemies) e.shoot(bullets);
                 shoot_clock.restart();
