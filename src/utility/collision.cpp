@@ -1,13 +1,7 @@
-#ifndef MOUSE_GAME_COLLISION
-#define MOUSE_GAME_COLLISION
-
 #include <SFML/Graphics.hpp>
+#include <utility/collision.hpp>
 
 namespace mg {
-
-    enum collision_axis {
-        x, y, both, none
-    };
 
     collision_axis aabb_collision(const sf::RectangleShape& moving, const sf::Vector2f& offset,
                                   const sf::RectangleShape& stationary) {
@@ -23,4 +17,3 @@ namespace mg {
     }
 }
 
-#endif //MOUSE_GAME_COLLISION

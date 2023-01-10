@@ -1,6 +1,6 @@
-#include "game/game_context.hpp"
-#include "scenes/initial_scene.hpp"
-#include "assets.hpp"
+#include <game/game_context.hpp>
+#include <scenes/initial_scene.hpp>
+#include <assets.hpp>
 
 int main() {
 
