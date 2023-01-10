@@ -9,90 +9,105 @@
 #include "entities/enemy.hpp"
 #include "entities/item.hpp"
 #include "entities/mouse.hpp"
+#include "game/game_context.hpp"
 #include "game/scene.hpp"
-#include "world/lever.hpp"
+#include "world/trigger.hpp"
+#include "world/moving_platform.hpp"
 #include "world/platform.hpp"
+#include "world/portal.hpp"
 
 namespace mg {
 
     class initial_scene : public scene {
 
-        std::vector<platform> platforms;
-        std::vector<enemy> enemies;
-        std::vector<bullet> bullets;
-        std::vector<lever> levers;
-        std::vector<item> items;
-        mouse player{{0, 0}, platforms, levers, items};
         sf::Color background_color{64, 128, 196};
         sf::Clock shoot_clock;
         bool key_released = false;
 
+        item* key1;
+        moving_platform* door1;
+
         void release_key() {
             if (not key_released) {
-                std::cout << "Key released!" << std::endl;
                 key_released = true;
-                items[0].set_gravity_affected(true);
+                key1->set_gravity_affected(true);
             }
+        }
+
+        void add_platform(float width, const sf::Vector2f& position) {
+            objects.push_back(new platform(width, position, get_platform_color()));
         }
 
     public:
 
-        initial_scene() {
-//            platforms.push_back(platform(40, {444, 430}));
-//            platforms.push_back(platform(128, {400, 450}));
-//            platforms.push_back(platform(128, {550, 400}));
-//            platforms.push_back(platform(96, {700, 300}));
-//            platforms.push_back(platform(96, {700, 220}));
+        explicit initial_scene(mouse& player) : scene(&player) {
 
-            platforms.push_back(platform(300, {0, 500}));
-            platforms.push_back(platform(230, {350, 450}));
-            platforms.push_back(platform(200, {600, 600}));
-            platforms.push_back(platform(100, {770, 500}));
-            platforms.push_back(platform(100, {850, 425}));
-            platforms.push_back(platform(350, {825, 325}));
-            platforms.push_back(platform(150, {750, 230}));
-            levers.push_back(lever({780, 206}, [&]() { release_key(); }));
-            items.push_back(item(item_type::key, {460, -50}, platforms));
-            items.push_back(item(item_type::cheese, {700, 560}, platforms, true));
+            set_background(textures["background"]);
+            set_platform_color({96, 48, 128});
+
+            add_platform(300, {0, 500});
+            add_platform(230, {350, 450});
+            add_platform(200, {600, 600});
+            add_platform(100, {770, 500});
+            add_platform(100, {850, 425});
+            add_platform(350, {825, 325});
+            add_platform(150, {750, 230});
+
+            objects.push_back(new portal({1290, 250}, sf::Color(255, 180, 200)));
+
+            objects.push_back(new enemy({900, 425 - 45}, player));
+
+            objects.push_back(new trigger(trigger_type::lever, {780, 182}, [&]() {
+                release_key();
+                return true;
+            }));
+            objects.push_back(new trigger(trigger_type::keyhole, {1025, 301}, [&]() {
+                if (not player.has_key()) return false;
+                door1->set_point({1130, 0});
+                player.remove_key();
+                return true;
+            }));
+
+            objects.push_back(door1 = new moving_platform({24, 200}, {1130, 125}, get_platform_color()));
+
+            objects.push_back(key1 = new item(item_type::key, {460, -50}, objects));
+            objects.push_back(new item(item_type::cheese, {700, 560}, objects, true));
 
             shoot_clock.restart();
         }
 
-        void set_player_position(float x, float y) {
-            player.setPosition({x, y});
-        }
+        void update(float delta_time, game_context& context) override {
 
-        void update(float delta_time, sf::RenderWindow& window) override {
+            context.move_player(delta_time);
 
-            const auto x_pos1 = player.getPosition().x;
-            player.animate(delta_time);
-            const auto x_pos2 = player.getPosition().x;
-            sf::View view = window.getView();
-            if (x_pos2 >= float(window.getSize().x) / 2) view.move({x_pos2 - x_pos1, 0.0f});
-            window.setView(view);
-
-            std::erase_if(items, [&](item& i) { return not i.is_alive(); });
+            std::erase_if(objects, [&](sf::Drawable* i) {
+                const auto c = dynamic_cast<character*>(i);
+                if (c != nullptr) return not c->is_alive();
+                return false;
+            });
 
             if (shoot_clock.getElapsedTime().asSeconds() >= 2) {
-                for (enemy& e : enemies) e.shoot(bullets);
+                for (sf::Drawable* object : objects) {
+                    const auto e = dynamic_cast<enemy*>(object);
+                    if (e != nullptr) e->shoot(objects);
+                }
                 shoot_clock.restart();
             }
-            for (bullet& b : bullets) b.animate(delta_time);
-            for (item& i : items) i.animate(delta_time);
-
-            if (not player.is_alive()) {
-                std::cout << "GAME OVER" << std::endl;
-                exit(0);
+            for (sf::Drawable* object : objects) {
+                const auto b = dynamic_cast<bullet*>(object);
+                const auto i = dynamic_cast<item*>(object);
+                const auto m = dynamic_cast<moving_platform*>(object);
+                if (b != nullptr or i != nullptr or m != nullptr) dynamic_cast<animatable*>(object)->animate(delta_time);
             }
+
+            if (player->getPosition().y > 768) player->oof();
+
+            if (not player->is_alive()) ded = true;
         }
 
         void draw(sf::RenderTarget& target, const sf::RenderStates& states) const override {
-            for (const bullet& b : bullets) target.draw(b);
-            for (const platform& p : platforms) target.draw(p);
-            for (const enemy& e : enemies) target.draw(e);
-            for (const lever& l : levers) target.draw(l);
-            for (const item& i : items) target.draw(i);
-            target.draw(player);
+            for (const sf::Drawable* o : objects) target.draw(*o);
+            target.draw(*player);
         }
 
         const sf::Color& get_background_color() const override {

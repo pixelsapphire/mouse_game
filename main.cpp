@@ -4,11 +4,14 @@
 
 int main() {
 
-    mg::textures::load();
+    mg::textures.load();
+    mg::fonts::load();
+    mg::sounds.load();
     mg::game_context context;
 
-    mg::initial_scene level_1_scene;
-    level_1_scene.set_player_position(150, 350);
+    mg::initial_scene level_1_scene(context.get_player());
+    context.get_player().set_scene(level_1_scene);
+    context.get_player().setPosition({150, 350});
 
     context.set_scene(level_1_scene);
     context.start_game();

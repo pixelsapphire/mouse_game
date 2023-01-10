@@ -4,6 +4,7 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 
+#include "assets.hpp"
 #include "entities/bullet.hpp"
 #include "entities/character.hpp"
 #include "entities/mouse.hpp"
@@ -17,14 +18,14 @@ namespace mg {
     public:
 
         explicit enemy(sf::Vector2f position, mouse& player) : player(player) {
-            setFillColor(sf::Color(255, 0, 0));
-            setSize({30, 30});
+            setTexture(&textures["entity.cat_the_enemy"]);
+            setSize({48, 48});
             setPosition(position);
             hp = 20;
         }
 
-        void shoot(std::vector<bullet>& bullets) {
-            bullets.push_back(bullet({255, 128, 0}, getPosition() + getSize() / 2.0f, player));
+        void shoot(std::list<sf::Drawable*>& objects) {
+            objects.push_back(new bullet({255, 128, 0}, getPosition() + getSize() / 2.0f, player));
         }
     };
 }

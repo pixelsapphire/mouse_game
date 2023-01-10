@@ -26,7 +26,7 @@ namespace mg {
             move(velocity * delta_time);
             if (getGlobalBounds().findIntersection(player.getGlobalBounds()).has_value()) {
                 setPosition({-100, -100});
-                player.damage(20);
+                player.damage(1);
             }
         }
     };

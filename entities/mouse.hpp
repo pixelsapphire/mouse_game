@@ -2,14 +2,16 @@
 #define MOUSE_GAME_MOUSE
 
 #include <iostream>
+#include <list>
 
 #include <SFML/Graphics.hpp>
 
 #include "definitions.hpp"
 #include "entities/character.hpp"
 #include "entities/item.hpp"
+#include "game/scene.hpp"
 #include "utility/collision.hpp"
-#include "world/lever.hpp"
+#include "world/trigger.hpp"
 #include "world/platform.hpp"
 
 namespace mg {
@@ -22,22 +24,41 @@ namespace mg {
 
         const float forward_speed = 200, jump_speed = 450;
         inventory inventory;
-        const std::vector<platform>& platforms;
-        std::vector<lever>& levers;
-        std::vector<item>& items;
+        std::list<sf::Drawable*>* objects;
+        bool inverted = false;
 
     public:
 
-        mouse(sf::Vector2f position, const std::vector<platform>& platforms, std::vector<lever>& levers,
-              std::vector<item>& items)
-                : platforms(platforms), levers(levers), items(items) {
-            setFillColor(sf::Color(64, 64, 64));
-            setSize({20, 20});
+        explicit mouse(const sf::Vector2f& position) {
+            setTexture(&textures["entity.mouse"]);
+            setSize({26, 26});
             setPosition(position);
-            hp = 60;
+            hp = 5;
+        }
+
+        bool has_key() const {
+            return inventory.key > 0;
+        }
+
+        void remove_key() {
+            inventory.key--;
+        }
+
+        const struct inventory& get_inventory() const {
+            return inventory;
+        }
+
+        void set_scene(scene& world) {
+            objects = &world.get_objects();
+        }
+
+        void oof() {
+            hp = 0;
         }
 
         void animate(float delta_time) override {
+
+            update_damage_cooldown();
 
             velocity.y += gravity_acceleration * delta_time;
 
@@ -50,27 +71,32 @@ namespace mg {
             bool can_move_left = true;
             bool can_move_right = true;
 
-            for (const platform& p : platforms) {
+            for (sf::Drawable* object : *objects) {
 
-                const float platform_top = p.getGlobalBounds().top;
-                const float platform_left = p.getPosition().x;
-                const float platform_right = p.getPosition().x + p.getSize().x;
+                const auto p = dynamic_cast<platform*>(object);
+                auto l = dynamic_cast<trigger*>(object);
 
-                const collision_axis collision = aabb_collision(*this, velocity * delta_time, p);
+                if (p != nullptr) {
 
-                if (collision == collision_axis::y and player_bottom <= platform_top) {
-                    velocity.y = 0;
-                    setPosition({getPosition().x, platform_top - player_size.x});
-                    can_jump = true;
-                } else if (collision == collision_axis::x or collision == collision_axis::both) {
-                    if (player_right >= platform_left and player_left <= platform_left) can_move_right = false;
-                    if (player_left <= platform_right and player_right >= platform_right) can_move_left = false;
+                    const float platform_top = p->getGlobalBounds().top;
+                    const float platform_left = p->getPosition().x;
+                    const float platform_right = p->getPosition().x + p->getSize().x;
+
+                    const collision_axis collision = aabb_collision(*this, velocity * delta_time, *p);
+
+                    if (collision == collision_axis::y and player_bottom <= platform_top) {
+                        velocity.y = 0;
+                        setPosition({getPosition().x, platform_top - player_size.x});
+                        can_jump = true;
+                    } else if (collision == collision_axis::x or collision == collision_axis::both) {
+                        if (player_right >= platform_left and player_left <= platform_left) can_move_right = false;
+                        if (player_left <= platform_right and player_right >= platform_right) can_move_left = false;
+                    }
+
+                } else if (l != nullptr) {
+                    const bool touching = l->getGlobalBounds().findIntersection(getGlobalBounds()).has_value();
+                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::X) and touching) l->switch_on();
                 }
-            }
-
-            for (lever& l : levers) {
-                const bool touching = l.getGlobalBounds().findIntersection(getGlobalBounds()).has_value();
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::X) and touching) l.switch_on();
             }
 
             velocity.x = 0;
@@ -78,16 +104,26 @@ namespace mg {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) and can_move_right) velocity.x += forward_speed;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) and can_jump) velocity.y = -jump_speed;
 
+            if (velocity.x < 0 and not inverted) {
+                inverted = true;
+                setTexture(&textures["entity.mouse_flipped"]);
+            } else if (velocity.x > 0 and inverted) {
+                inverted = false;
+                setTexture(&textures["entity.mouse"]);
+            }
+
             move(velocity * delta_time);
 
-            for (item& i : items) {
-                const bool touching_item = i.getGlobalBounds().findIntersection(getGlobalBounds()).has_value();
-                if (touching_item) {
-                    std::cout << "mouse collected an item" << std::endl;
-                    i.damage(1);
-                    if (i.get_type() == item_type::cheese) inventory.cheese++;
-                    else if (i.get_type() == item_type::key) inventory.key++;
-                    else if (i.get_type() == item_type::heart) hp++;
+            for (sf::Drawable* object : *objects) {
+                auto i = dynamic_cast<item*>(object);
+                if (i != nullptr) {
+                    const bool touching_item = i->getGlobalBounds().findIntersection(getGlobalBounds()).has_value();
+                    if (touching_item) {
+                        i->damage(1);
+                        if (i->get_type() == item_type::cheese) inventory.cheese++;
+                        else if (i->get_type() == item_type::key) inventory.key++;
+                        else if (i->get_type() == item_type::heart) hp++;
+                    }
                 }
             }
         }
