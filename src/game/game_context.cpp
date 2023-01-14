@@ -1,4 +1,5 @@
 #include <game/game_context.hpp>
+#include <scenes/initial_scene.hpp>
 #include <SFML/Graphics.hpp>
 
 namespace mg {
@@ -58,5 +59,8 @@ namespace mg {
         }
         window.setView(new_view);
     }
-}
 
+    void game_context::finish_level() {
+        // TODO Display some kind of "level complete" message with time and a "return" button which takes the player to the level selection menu
+    }
+}

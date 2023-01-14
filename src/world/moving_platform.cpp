@@ -19,7 +19,9 @@ namespace mg {
         const auto pos = getPosition();
         if (target != pos) {
             const sf::Vector2f direction = (target - pos) / std::hypot(target.x - pos.x, target.y - pos.y);
-            move(direction * velocity * delta_time);
+            const sf::Vector2f offset = direction * velocity * delta_time;
+            if ((target - pos).length() >= offset.length()) move(offset);
+            else setPosition(target);
         }
     }
 }

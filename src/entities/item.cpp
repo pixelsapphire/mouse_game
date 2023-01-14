@@ -14,7 +14,7 @@ namespace mg {
 
         if (type == item_type::key) setTexture(&textures["item.key"]);
         else if (type == item_type::cheese) setTexture(&textures["item.cheese"]);
-        // else if (type == item_type::item_heart) setTexture(textures::item_heart);
+        else if (type == item_type::heart) setTexture(&textures["item.heart"]);
 
         setSize({32, 32});
         setPosition(position);
@@ -49,6 +49,10 @@ namespace mg {
                         velocity.y = 0;
                         setPosition({getPosition().x, platform_top - item_size.x});
                     }
+//                    if (getGlobalBounds().findIntersection(p->getGlobalBounds()).has_value() and velocity.y > 0) {
+//                        setPosition({getPosition().x, p->getGlobalBounds().top - item_size.y});
+//                        velocity.y = 0;
+//                    }
                 }
             }
 

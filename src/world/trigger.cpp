@@ -8,7 +8,7 @@ namespace mg {
             : type(type), on_activate(std::move(on_activate)) {
 
         if (type == trigger_type::lever) {
-            setTexture(&textures["trigger.lever.oof"]);
+            setTexture(&textures["trigger.lever.off"]);
             setSize({48, 48});
         } else if (type == trigger_type::keyhole) {
             setTexture(&textures["trigger.keyhole"]);

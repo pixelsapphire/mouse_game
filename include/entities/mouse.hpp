@@ -25,7 +25,9 @@ namespace mg {
         const float forward_speed = 200, jump_speed = 450;
         inventory inventory;
         std::list<sf::Drawable*>* objects;
-        bool inverted = false;
+        bool inverted = false, player_control = true;
+        sf::Clock travel_clock;
+        sf::Vector2f travel_target;
 
     public:
 
@@ -42,6 +44,8 @@ namespace mg {
         void oof();
 
         void animate(float delta_time) override;
+
+        void enter_portal(const portal& portal);
     };
 }
 

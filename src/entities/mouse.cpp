@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 
+#include <assets.hpp>
 #include <definitions.hpp>
 #include <entities/character.hpp>
 #include <entities/item.hpp>
@@ -40,7 +41,7 @@ namespace mg {
 
         update_damage_cooldown();
 
-        velocity.y += gravity_acceleration * delta_time;
+        if (player_control) velocity.y += gravity_acceleration * delta_time;
 
         const sf::Vector2f player_size = getSize();
         const float player_bottom = getPosition().y + player_size.y;
@@ -80,9 +81,11 @@ namespace mg {
         }
 
         velocity.x = 0;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) and can_move_left) velocity.x -= forward_speed;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) and can_move_right) velocity.x += forward_speed;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) and can_jump) velocity.y = -jump_speed;
+        if (player_control) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) and can_move_left) velocity.x -= forward_speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) and can_move_right) velocity.x += forward_speed;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) and can_jump) velocity.y = -jump_speed;
+        }
 
         if (velocity.x < 0 and not inverted) {
             inverted = true;
@@ -90,6 +93,14 @@ namespace mg {
         } else if (velocity.x > 0 and inverted) {
             inverted = false;
             setTexture(&textures["entity.mouse"]);
+        }
+
+        if (not player_control) {
+            const float et = travel_clock.getElapsedTime().asSeconds();
+            setRotation(sf::radians(pow(et, 2)));
+            setScale({2.5f / (et + 2.5f), 2.5f / (et + 2.5f)});
+            move((travel_target - (getPosition())) * 0.01f);
+            setFillColor(sf::Color(255, 255, 255, 255 * (1 - et / 5)));
         }
 
         move(velocity * delta_time);
@@ -105,6 +116,16 @@ namespace mg {
                     else if (i->get_type() == item_type::heart) hp++;
                 }
             }
+        }
+    }
+
+    void mouse::enter_portal(const portal& portal) {
+        if (player_control) {
+            player_control = false;
+            velocity = sf::Vector2f(0, 0);
+            travel_clock.restart();
+            travel_target = portal.getPosition() + portal.getSize() / 2.0f;
+            sounds["sfx.portal"].play();
         }
     }
 }

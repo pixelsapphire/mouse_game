@@ -8,7 +8,8 @@ namespace mg {
 
     class textures_bundle {
 
-        sf::Texture background, bg_placeholder,
+        sf::Texture icon,
+                background1, background2, bg_placeholder,
                 item_cheese, item_key, item_heart,
                 trigger_lever_off, trigger_lever_on, trigger_keyhole,
                 entity_mouse, entity_mouse_flipped, entity_cat_the_enemy,
@@ -32,8 +33,8 @@ namespace mg {
 
     class sounds_bundle {
 
-        sf::SoundBuffer buffer_game_over;
-        sf::Sound sound_game_over;
+        sf::SoundBuffer buffer_game_over, buffer_portal_travel;
+        sf::Sound sound_game_over, sound_portal_travel;
 
     public:
 

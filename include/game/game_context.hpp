@@ -30,6 +30,8 @@ namespace mg {
         void start_game();
 
         void move_player(float delta_time);
+
+        void finish_level();
     };
 }
 
